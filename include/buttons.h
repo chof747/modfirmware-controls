@@ -2,7 +2,7 @@
 #define BUTTONS_H
 
 #include <Arduino.h>
-#include <component.h>
+#include <modfw_component.h>
 
 namespace ModFirmWare
 {
@@ -21,7 +21,7 @@ namespace ModFirmWare
 
     Buttons() : buttonPressCallback(nullptr) {}
 
-    bool setup();
+    bool setup(Application*);
     void loop();
 
     void setButtonPressedCallBack(onButtonPressedCallBackType cb);

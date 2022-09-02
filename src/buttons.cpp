@@ -8,11 +8,11 @@
 
 using namespace ModFirmWare;
 
-bool Buttons::setup()
+bool Buttons::setup(Application* app)
 //*********************************************************************************
 {
 
-  if (Component::setup())
+  if (Component::setup(app))
   {
     logger->info(MODULE, "Initializing Button Controls ...");
 
