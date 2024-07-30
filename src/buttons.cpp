@@ -1,12 +1,20 @@
 #include "buttons.h"
+#include "logengine.h"
 
-#define MODULE "BUTTONS"
+#define LOGTAG "BUTTONS"
 
 #define DEBOUNCE_TIME 30
-#define LONG_PRESS_TIME 500
+#define LONG_PRESS_TIME 3000
 #define DBL_CLICK_TIME 150
 
 using namespace ModFirmWare;
+
+Buttons::Buttons() : buttonPressCallback(nullptr) 
+//*********************************************************************************
+{
+  logger = LogEngine::getInstance();
+}
+
 
 bool Buttons::setup(Application* app)
 //*********************************************************************************
@@ -14,8 +22,6 @@ bool Buttons::setup(Application* app)
 
   if (Component::setup(app))
   {
-    logger->info(MODULE, "Initializing Button Controls ...");
-
     setupButtons();
 
     state = 0;
@@ -34,14 +40,15 @@ bool Buttons::setup(Application* app)
 void Buttons::loop()
 //*********************************************************************************
 {
+  
   uint16_t newState = readButtons();
   long t = millis();
 
-  // Log.debug(MODULE, "nstate = %d, state = %d", newState, state);
+  //logger->debug(LOGTAG, "nstate = %d, state = %d", newState, state);
 
   if ((newState != state) && (DEBOUNCE_TIME < (t - eventTime)))
   {
-    // Log.debug(MODULE, "New State detected: %04X (old was %04X) at %d", newState, state, t);
+    //logger->debug(LOGTAG, "New State detected: %04X (old was %04X) at %d", newState, state, t);
     if (newState > state)
     {
       // button has been pressed start
@@ -53,7 +60,7 @@ void Buttons::loop()
     {
       // release
       unsigned long pressTime = t - eventTime;
-      // Log.debug(MODULE,"Click counter before = %d", clicks);
+      //logger->debug(LOGTAG, "Click counter before = %d", clicks);
       clicks += 1;
 
       if (LONG_PRESS_TIME <= pressTime)
@@ -68,7 +75,7 @@ void Buttons::loop()
       }
 
       state = newState;
-      // Log.debug(MODULE,"Click counter after = %d", clicks);
+      //logger->debug(LOGTAG, "Click counter after = %d", clicks);
     }
     else
     {
@@ -92,9 +99,9 @@ void Buttons::loop()
       type = click_t::SINGLE;
     }
 
-    logger->info(MODULE, "\033[32m %s of button state x%04X \033[37m", 
-       (type == click_t::LONG) ? "Long press" : (
-       (type == click_t::DOUBLE) ? "Double click" : "Click"), eventState);
+    //logger->info(LOGTAG, "\033[32m %s of button state x%04X \033[0m", 
+    //   (type == click_t::LONG) ? "Long press" : (
+    //   (type == click_t::DOUBLE) ? "Double click" : "Click"), eventState);
     // report the click
     if (buttonPressCallback != nullptr)
     {
@@ -107,7 +114,7 @@ void Buttons::loop()
   }
 }
 
-void Buttons::setButtonPressedCallBack(onButtonPressedCallBackType cb)
+void Buttons::setButtonPressedCallBack(Callback cb)
 //*********************************************************************************
 {
   this->buttonPressCallback = cb;

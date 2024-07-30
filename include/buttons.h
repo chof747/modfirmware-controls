@@ -7,6 +7,8 @@
 namespace ModFirmWare
 {
 
+  class LogEngine;
+
   class Buttons : public Component
   {
   public:
@@ -17,16 +19,17 @@ namespace ModFirmWare
       LONG = 2
     };
 
-    typedef std::function<void(const uint16_t state, click_t type)> onButtonPressedCallBackType;
+     using Callback = std::function<void(const uint16_t state, click_t type)>;
 
-    Buttons() : buttonPressCallback(nullptr) {}
+    Buttons();
 
     bool setup(Application*);
     void loop();
 
-    void setButtonPressedCallBack(onButtonPressedCallBackType cb);
+    void setButtonPressedCallBack(Callback cb);
 
   protected:
+    LogEngine* logger;
     virtual void setupButtons() = 0;
     virtual uint16_t readButtons() = 0;
 
@@ -37,7 +40,7 @@ namespace ModFirmWare
     uint8_t clicks;
     bool longPress;
 
-    onButtonPressedCallBackType buttonPressCallback;
+    Callback buttonPressCallback;
   };
 
 };
