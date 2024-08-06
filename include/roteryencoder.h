@@ -10,7 +10,7 @@ namespace ModFirmWare
   class RotaryEncoder : public Component
   {
   public:
-    using Callback = std::function<void()>;
+    using Callback = std::function<void(long counter)>;
   
     RotaryEncoder(int clockPin, int dataPin);
     bool setup(Application*) override;
@@ -21,7 +21,14 @@ namespace ModFirmWare
   private:
     int clockPin;
     int dataPin;
-    volatile uint8_t counter; // Counter for encoder ticks (signed for both directions)
+    
+    volatile uint8_t state; // To store the current state of the encoder  
+    volatile uint8_t lastState; // To store the last state of the encoder    
+    volatile long counter; // Counter for encoder ticks (signed for both directions)
+    volatile long movement; //the internal counter of the interrupt routine
+    volatile long lastTick;
+    volatile long lastCounter;
+    
     Callback onCw;
     Callback onCcw;
 
