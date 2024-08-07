@@ -1,5 +1,6 @@
 #include "roteryencoder.h"
 #include "modfirmware.h"
+#include <limits.h>
 
 using namespace ModFirmWare;
 
@@ -36,12 +37,29 @@ using namespace ModFirmWare;
 
 const int8_t transitions[16] = ROTARY_ENCODER_TRANSITIONS;
 
-RotaryEncoder::RotaryEncoder(int clockPin, int dataPin)
-    : clockPin(clockPin), dataPin(dataPin), counter(0), lastTick(0), lastCounter(0), movement(0),
-      onCcw(nullptr), onCw(nullptr)
+RotaryEncoder::RotaryEncoder(int clockPin, int dataPin): Component()
 //****************************************************************************************
 {
+  initialize(clockPin, dataPin);
 }
+
+RotaryEncoder::RotaryEncoder(int clockPin, int dataPin, long min, long max) : Component()
+{
+  initialize(clockPin, dataPin);
+  setMaximum(max);
+  setMinimum(min);
+}
+RotaryEncoder::RotaryEncoder(int clockPin, int dataPin, long min, long max, bool rotate)
+: Component()
+{
+  initialize(clockPin, dataPin);
+  setMaximum(max);
+  setMinimum(min);
+  setRotate(rotate);
+}
+
+
+
 
 bool RotaryEncoder::setup(Application *app)
 //****************************************************************************************
@@ -57,6 +75,8 @@ bool RotaryEncoder::setup(Application *app)
 
   attachInterruptArg(digitalPinToInterrupt(clockPin), registerTick, this, CHANGE);
   attachInterruptArg(digitalPinToInterrupt(dataPin), registerTick, this, CHANGE);
+
+  logger->debug(LOGTAG, "Minimum = %d, Maximum = %d, Rotate = %s", minimum, maximum, rotate ? "on": "off");
   return true;
 }
 
@@ -67,22 +87,23 @@ void RotaryEncoder::loop()
   // Temporarily disable interrupts to safely access shared variables
   noInterrupts();
   long ticks = counter - lastCounter;
-  long c = counter;
   lastCounter = counter;
   interrupts();
+
+  rotaryCounter = capAndRotate(rotaryCounter + ticks);
 
   if (ticks == 0)
   {
     return;
   }
  
-  logger->debug(LOGTAG, "Counter = %d ", c);
+  logger->debug(LOGTAG, "Counter = %d RotaryCounter = %d", counter, rotaryCounter);
 
   while (ticks > 0)
   {
     if (onCw)
     {
-      onCw(c);
+      onCw(rotaryCounter);
     }
     --ticks;
   }
@@ -91,11 +112,47 @@ void RotaryEncoder::loop()
   {
     if (onCcw)
     {
-      onCcw(c);
+      onCcw(rotaryCounter);
     }
     ++ticks;
   }
  
+}
+
+long RotaryEncoder::capAndRotate(long counter)
+//****************************************************************************************
+{
+  if ((maximum >= counter) && (minimum <= counter))
+  {
+    return counter;
+  }
+
+  counter = (maximum < counter) ? maximum : counter;
+  counter = (minimum > counter) ? minimum : counter;
+
+  if (rotate)
+  {
+    counter = (maximum == counter) ? minimum : maximum;
+  }
+
+  return counter;
+}
+
+void RotaryEncoder::initialize(int cp, int dp)
+//****************************************************************************************
+{
+  clockPin = cp;
+  dataPin = dp;
+  counter = 0;
+  rotaryCounter = 0;
+  lastTick = 0; 
+  lastCounter = 0;
+  movement = 0;
+  minimum = LONG_MIN;
+  maximum = LONG_MAX;
+  rotate = false;
+  onCcw = NULL;
+  onCw = NULL;
 }
 
 void IRAM_ATTR RotaryEncoder::registerTick(void *arg)
